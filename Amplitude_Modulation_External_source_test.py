@@ -19,7 +19,7 @@
 #   Lucid AM IN -----> External signal generator output
 # -------------------------------------------------
 
-
+#Adding comment for testing git commits
 
 import numpy as np
 import pyvisa as visa
