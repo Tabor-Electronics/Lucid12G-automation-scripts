@@ -133,7 +133,7 @@ scope.write(':CHANnel{}:SCALe 500E-3'.format(2))
 scope.write(':CHANnel{}:OFFSet 0.0'.format(1))
 scope.write(':CHANnel{}:OFFSet 0.0'.format(2))
 scope.write(':TRIGger:MODE EDGE')
-scope.write(':TRIGger:EDGE:SOURce CHANnel{}'.format(3))
+scope.write(':TRIGger:EDGE:SOURce CHANnel{}'.format(1))
 time.sleep(2)
 
 
@@ -147,7 +147,7 @@ REF_Out_freq_tb = [10e6,100e6]
 ideal_min_freq = [9.85,98.5]
 ideal_max_freq = [10.15,101.5]
 timebase_scale = [100e-09,10e-09]
-timebase_position = [0,423.4E-9]
+timebase_position = [0,400e-12]
 
 
 for test in range(2):
@@ -158,6 +158,17 @@ for test in range(2):
     send_scpi_cmd(':OUTPut ON', handle)
     print('Parameters set for signal with REF output frequency {0} and press enter to continue test'.format(REF_Out_freq_tb[test]))
     input()
+
+    scope.write(':CHANnel1:ISIM:BWLimit:WALL')
+    scope.write(':CHANnel1:ISIM:BWLimit ON')
+    scope.write(':CHANnel1:ISIM:BANDwidth 200e6')
+
+    scope.write(':CHANnel2:ISIM:BWLimit:WALL')
+    scope.write(':CHANnel2:ISIM:BWLimit ON')
+    scope.write(':CHANnel2:ISIM:BANDwidth 200e6')
+
+    time.sleep(2)
+
     scope.write(':TIMebase:SCALe {}'.format(timebase_scale[test]))
     scope.write(':TIMebase:POSition {}'.format(timebase_position[test]))
     time.sleep(2)
