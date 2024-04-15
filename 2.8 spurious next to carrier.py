@@ -18,10 +18,97 @@ import numpy as np
 import ctypes
 import _ctypes
 import pyvisa as visa
-from telucid_functions_v3 import connect
-from telucid_functions_v3 import disconnect
-from telucid_functions_v3 import sendScpi
-from telucid_functions_v3 import connect_spectrum_via_lan
+def connect():
+    hLib = ctypes.cdll.LoadLibrary('lucidsdk_x64_cpp.dll')
+    initChannelProto = ctypes.WINFUNCTYPE(
+        ctypes.c_int,       # Return type.
+        ctypes.c_int,       # int spiType
+        ctypes.c_uint,      # unsigned int device_idx
+        ctypes.c_char_p,    # const char * log_path
+        ctypes.c_int        # int log_mode
+    )
+    initChannelParams = (1, "p1", 0), (1, "p2", 0), (1, "p3", 0), (1, "p4", 0)
+
+    # Actually map the call ("initChannel(...)") to a Python name.
+    initChannel = initChannelProto(("initChannel", hLib), initChannelParams)
+
+    p1 = ctypes.c_int(0)
+    p2 = ctypes.c_uint(0)
+    p3 = ctypes.c_char_p(bytes(b'lucid_log.txt'))
+    p4 = ctypes.c_int(0)
+
+    res = initChannel(p1, p2, p3, p4)
+    if (not res):
+        disconnect(hLib)
+        return None
+    else:
+        return(hLib)
+def disconnect(hLib):
+    if(hLib == None):
+        return
+    # Unload the DLL so that it can be rebuilt
+    libHandle = hLib._handle
+    _ctypes.FreeLibrary(libHandle)
+    del hLib
+def sendScpi(command, hLib):
+    if (hLib == None):
+        return
+    # int SendScpi(char const *,char *,unsigned int)
+    SendScpiProto = ctypes.WINFUNCTYPE(
+        ctypes.c_int,       # Return type
+        ctypes.c_char_p,    # const char * scpi command
+        ctypes.c_char_p,    # char * response
+        ctypes.c_int,       # max input, in chars
+    )
+    SendScpiParams = (1, "cmd", 0), (1, "answer", 0), (1, "nchars", 0)
+    sendScpi = SendScpiProto(("SendScpi", hLib), SendScpiParams)
+    #print(sendScpi)
+    answer = ctypes.create_string_buffer(1024)
+    cmd = ctypes.create_string_buffer(bytes(command, 'utf-8'))
+    nchars = ctypes.c_int(64)
+
+    rv = sendScpi(cmd, answer, nchars)
+    if (rv <= -1):
+        print("error")
+def send_scpi_query(dev, query):
+    try:
+        resourceManager = visa.ResourceManager()
+        session = resourceManager.open_resource(dev)
+
+        # Need to define the termination string
+        session.write_termination = '\n'
+        session.read_termination = '\n'
+
+        #print('IDN: ' + str(session.query(query)))
+        response = str(session.query(query))
+        session.close()
+        return response
+
+    except Exception as e:
+        print('[!] Exception: ' + str(e))
+def connect_spectrum_via_lan():
+    device_address = 'TCPIP::192.90.70.36::5025::SOCKET'
+    try:
+        rm = visa.ResourceManager()
+        spectrum_analyzer = rm.open_resource(device_address)
+        spectrum_analyzer.timeout = 2000
+        spectrum_analyzer.write_termination = '\n'
+        spectrum_analyzer.read_termination = '\n'
+        print(spectrum_analyzer)
+    except visa.Error as e:
+        print("Error while connecting: {}".format(e))
+    try:
+        # Query the *IDN? command to get the identification string
+        spectrum_analyzer.write('*IDN?')
+        # spectrum_analyzer.timeout = 1000
+        idn_response = spectrum_analyzer.read()
+        spectrum_analyzer.write('*RST')
+        spectrum_analyzer.write('*CLS')
+
+        print("IDN Response: {}".format(idn_response))
+    except visa.Error as e:
+        print("Error reading IDN: {}".format(e))
+    return spectrum_analyzer
 
 handle = connect()
 # Initilization
