@@ -13,21 +13,17 @@
 #   For the same setup only power from External signal generator source(Lucid LS1291D) is changed(-5dBm,0dBm,10dBm)
 #   and skew should be in range of +1.5nsec and -1.5 nsec.
 #
-#
-#
 # Hardware Requirement
 #  1. Lucid LS1291P
 #  2. Agilent MSOS9254A Oscilloscope
 #  3. Lucid LS1291D
 
 # Hardware Connection
-#   Lucid LS1291D RF Out ------> Lucid LS1291P 10/100 MHz REF IN
-#   Lucid LS1291D 10MHz REF Out (Change as per test need) ------> Channel 2 of Oscilloscope
-#   Lucid LS1291D RF Out ------> Channel 1 of Oscilloscope
+#   Lucid LS1291D 10MHz REF Out (Change as per test need) ------> Lucid LS1291P 10/100 MHz REF IN
+#   Lucid LS1291D REF Out ------> Channel 2 of Oscilloscope
+#   Lucid LS1291P RF Out ------> Channel 1 of Oscilloscope
 
-# -------------------------------------------------
-
-
+########################################################################################################################
 
 import pyvisa as visa
 import socket
@@ -70,13 +66,23 @@ def send_scpi_query(dev, query):
     except Exception as e:
         print('[!] Exception: ' + str(e))
 
-# --- MAIN ---
+########################################################################################################################
+# Lucid Connection and Initialization
 
 # Set the IP Address and port
 handle = 'TCPIP0::192.90.70.22::10000::SOCKET'
 
+# Initialization
+send_scpi_cmd('*RST',handle )
+send_scpi_cmd('*IDN?',handle )
+send_scpi_cmd(':INST 1',handle )
+send_scpi_cmd(':INST:ACT 1',handle )
+
 ########################################################################################################################
-scope_addr = 'TCPIP0::K-MSO9254-90134.local::inst0::INSTR' # connect to scope via USB
+########################################################################################################################
+
+# Oscilloscope Connection
+scope_addr = 'USB0::0x2A8D::0x900E::MY55490134::INSTR' # connect to scope via USB
 try:
     resourceManager = visa.ResourceManager()  # Create a connection (session) to the instrument
     #scope = resourceManager.get_instrument(scope_addr2)
@@ -98,10 +104,10 @@ time.sleep(2)
 scope.write('*OPC')
 scope.write(':MEASure:CLEar')
 scope.write('*CLS;:DISPlay:CGRade:LEVels ')
+
 ##############################################################################################################################################
 
-
-
+# set Testing and Table Parameters
 frequency_list= [10e6,10e6,10e6,100e6,100e6,100e6]
 power_list= [-5,0,10,-5,0,10]
 measured_skew= []
@@ -122,9 +128,9 @@ test = 0
 sig_gen_freq_tb = list(frequency_list)
 sig_gen_power_tb = list(power_list)
 
-
+########################################################################################################################
+print('Test start for Reference Input')
 for test1 in range(0,6,3):
-
     # Initialization
     send_scpi_cmd('*CLS', handle)
     send_scpi_cmd('*RST', handle)
@@ -213,8 +219,7 @@ for test1 in range(0,6,3):
 
         table_i = table_i + 1
 
-###################################################################################################################################################
-
+########################################################################################################################
 
 # Sample data for the table
 data = list(zip(serial_no_tb, sig_gen_freq_tb, sig_gen_power_tb, output_status_tb))
@@ -233,6 +238,6 @@ print("Table has been written to Reference Internal source test report.txt")
 
 print('Test Run successfully')
 
-
+########################################################################################################################
 
 

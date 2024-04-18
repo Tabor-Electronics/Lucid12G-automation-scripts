@@ -19,6 +19,14 @@
 #   Lucid AM IN -----> External signal generator output
 # -------------------------------------------------
 
+# External signal generator settings
+# 	Amplitude: 			1 Vpp
+#   Frequency: 			100 kHz
+#   Output: 			ON
+
+
+
+
 #Adding comment for testing git commits
 
 import numpy as np
@@ -27,7 +35,7 @@ import socket
 import time
 from tabulate import tabulate
 def connect_spectrum_via_lan():
-    device_address = 'TCPIP::192.90.70.36::5025::SOCKET'
+    device_address = 'TCPIP::192.90.70.22::5025::SOCKET'
     try:
         rm = visa.ResourceManager()
         spectrum_analyzer = rm.open_resource(device_address)
@@ -79,7 +87,9 @@ def send_scpi_query(dev, query):
     except Exception as e:
         print('[!] Exception: ' + str(e))
 ########################################################################################################################
-scope_addr = 'TCPIP0::K-MSO9254-90134.local::inst0::INSTR' # connect to scope via USB
+
+# Oscilloscope Connection
+scope_addr = 'USB0::0x2A8D::0x900E::MY55490134::INSTR' # connect to scope via USB
 try:
     resourceManager = visa.ResourceManager()  # Create a connection (session) to the instrument
     #scope = resourceManager.get_instrument(scope_addr2)
@@ -92,8 +102,8 @@ try:
     scope.write('*IDN?')
     idn = scope.read()
     print('*IDN? returned: %s' % idn.rstrip('\n'))
-except Error as ex2:
-    print('Couldn\'t connect to \'%s\', exiting now...' % scope_addr)
+except visa.Error as ex2:
+    print('Couldn\'t connect to \'%s\', exiting now...' %scope_addr)
     sys.exit()
 
 scope.write('AUTOscale')
@@ -103,17 +113,10 @@ scope.write(':MEASure:CLEar')
 scope.write('*CLS;:DISPlay:CGRade:LEVels ')
 
 ##########################################################################################################################
-
-# --- MAIN ---
+# Lucid Connection and Initialization
 
 # Set the IP Address and port
 handle = 'TCPIP0::192.90.70.22::10000::SOCKET'
-
-# Parameters
-freq = 1000
-pwr_dBm = 5
-channel_select = 1
-threshold = 101
 
 # Initialization
 send_scpi_cmd('*RST',handle )
@@ -121,7 +124,16 @@ send_scpi_cmd('*IDN?',handle )
 send_scpi_cmd(':INST 1',handle )
 send_scpi_cmd(':INST:ACT 1',handle )
 
-# Set the cw to 500Mhz and Powe 10 dbm
+########################################################################################################################
+
+# Testing Parameters
+freq = 1000
+pwr_dBm = 5
+channel_select = 1
+threshold = 101
+
+
+# Set the Lucid Parameters
 send_scpi_cmd(':FREQuency {0}MHz'.format(freq),handle )
 send_scpi_cmd(':POWer {0}'.format(pwr_dBm),handle )
 
@@ -134,7 +146,7 @@ send_scpi_cmd(':AM ON',handle )
 send_scpi_cmd(':OUTPut ON',handle )
 
 #####################################################################################################################3##
-
+print('Test start for Amplitude Modulation for External source')
 scope.write(':CHANnel{}:PROBe 1.0'.format(channel_select))
 scope.write(':CHANnel{}:SCALe 100E-3'.format(channel_select))
 scope.write(':TIMebase:SCALe 10E-6')
@@ -168,8 +180,9 @@ print('Maximum Voltage is {}'.format(voltage_max))
 Mod_depth = (voltage_max-voltage_min)/(voltage_max+voltage_min)*100
 print('Modulation depth in percentage is {} %'.format(Mod_depth))
 
+########################################################################################################################
 
-
+# Set the table parameters
 serial_no_tb = np.zeros(2)
 modulation_depth_tb = np.zeros(2)
 modulating_frequency_tb = np.zeros(2)
@@ -191,9 +204,8 @@ for i in range(1):
 
     table_i = table_i + 1
 
-# Test report
-
-
+########################################################################################################################
+# Test report parameters
 # Sample data for the table
 data = list(zip(serial_no_tb, modulation_depth_tb, modulating_frequency_tb,output_status_tb))
 # Creating the table
@@ -207,13 +219,9 @@ with open("Amplitude Modulation External Source test report.txt", "w") as f:
 
 print("Table has been written to table.txt")
 
-
-
 print('Test Run successfully')
-#
-#
-#
-#
+
+########################################################################################################################
 
 
 

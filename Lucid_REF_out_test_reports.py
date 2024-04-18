@@ -18,10 +18,7 @@
 #   Lucid LS1291D 10MHz REF Out (Change as per test need) ------> Channel 1 of Oscilloscope
 #
 
-# -------------------------------------------------
-
-
-
+########################################################################################################################
 import pyvisa as visa
 import socket
 import time
@@ -93,7 +90,9 @@ def disconnect(hLib):
 handle = connect()
 
 ########################################################################################################################
-scope_addr = 'TCPIP0::K-MSO9254-90134.local::inst0::INSTR' # connect to scope via USB
+
+# Oscilloscope Connection
+scope_addr = 'USB0::0x2A8D::0x900E::MY55490134::INSTR' # connect to scope via USB
 try:
     resourceManager = visa.ResourceManager()  # Create a connection (session) to the instrument
     #scope = resourceManager.get_instrument(scope_addr2)
@@ -115,8 +114,10 @@ time.sleep(2)
 scope.write('*OPC')
 scope.write(':MEASure:CLEar')
 scope.write('*CLS;:DISPlay:CGRade:LEVels ')
+
 ##############################################################################################################################################
 
+# Lucid Connection and Initialization
 # Initialization
 send_scpi_cmd('*CLS',handle)
 send_scpi_cmd('*RST',handle)
@@ -127,6 +128,7 @@ send_scpi_cmd(':INST:ACT 1',handle)
 
 ###################################################################################################################################################
 
+#Oscilloscope initialization
 scope.write(':CHANnel{}:PROBe 1.0'.format(1))
 scope.write(':CHANnel{}:SCALe 500E-3'.format(1))
 scope.write(':CHANnel{}:SCALe 500E-3'.format(2))
@@ -136,7 +138,9 @@ scope.write(':TRIGger:MODE EDGE')
 scope.write(':TRIGger:EDGE:SOURce CHANnel{}'.format(1))
 time.sleep(2)
 
+########################################################################################################################
 
+# set Testing and Table Parameters
 serial_no_tb = np.zeros(2)
 REF_Out_freq_tb = np.zeros(2)
 RF_output_freq_tb = np.zeros(2)
@@ -149,7 +153,8 @@ ideal_max_freq = [10.15,101.5]
 timebase_scale = [100e-09,10e-09]
 timebase_position = [0,400e-12]
 
-
+########################################################################################################################
+print('Test start for Reference output')
 for test in range(2):
     # FM modulation setting with Internal source
     send_scpi_cmd(':ROSC:SOUR INT', handle)
@@ -190,10 +195,9 @@ for test in range(2):
     serial_no_tb[table_i] = table_i + 1
     table_i = table_i + 1
 
-
-
 ########################################################################################################################
 
+# Test report parameters
 # Sample data for the table
 data = list(zip(serial_no_tb, REF_Out_freq_tb,RF_output_freq_tb, output_status_tb))
 
@@ -211,3 +215,4 @@ print("Table has been written to Reference Output test report.txt")
 
 print('Test Run successfully')
 
+########################################################################################################################

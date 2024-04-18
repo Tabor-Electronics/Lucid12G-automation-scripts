@@ -20,8 +20,16 @@
 # Hardware Connection
 #   Lucid RF Out ------> Scope Channel1
 #   Lucid TRIG IN -----> External signal generator output
-# -------------------------------------------------
 
+# External signal generator parameters
+# Function shape:	Square
+# Amplitude: 		4 Vpp
+# Offset: 			2V
+# Output: 			ON
+# Duty Cycle: 		As specified in the test
+# Frequency: 		As specified in the test
+
+########################################################################################################################
 import pyvisa as visa
 import socket
 import time
@@ -68,7 +76,7 @@ handle = 'TCPIP0::192.90.70.22::10000::SOCKET'
 
 ########################################################################################################################
 # Scope Connection
-scope_addr = 'TCPIP0::K-MSO9254-90134.local::inst0::INSTR' # connect to scope via USB
+scope_addr = 'USB0::0x2A8D::0x900E::MY55490134::INSTR' # connect to scope via USB
 try:
     resourceManager = visa.ResourceManager()  # Create a connection (session) to the instrument
     #scope = resourceManager.get_instrument(scope_addr2)
@@ -90,22 +98,26 @@ time.sleep(2)
 scope.write('*OPC')
 scope.write(':MEASure:CLEar')
 scope.write('*CLS;:DISPlay:CGRade:LEVels ')
-##############################################################################################################################################
 
-# Initialization
+########################################################################################################################
+
+# Lucid Initialization
 send_scpi_cmd('*CLS',handle)
 send_scpi_cmd('*RST',handle)
 send_scpi_cmd(':INST 1',handle)
 send_scpi_cmd(':INST:ACT 1',handle)
 
+########################################################################################################################
+#Lucid parameters
 
-# Set the cw to 500Mhz and Powe 10 dbm
+# Set the Lucid parameters
 send_scpi_cmd(':FREQuency 1000000000',handle)
 send_scpi_cmd(':POWer 5',handle)
 
 
 ###################################################################################################################################################
 
+# Set the scope parameters
 scope.write(':CHANnel{}:PROBe 1.0'.format(1))
 scope.write(':CHANnel{}:SCALe 200E-3'.format(1))
 scope.write(':CHANnel{}:OFFSet 0.0'.format(1))
@@ -113,19 +125,20 @@ scope.write(':TRIGger:MODE EDGE')
 scope.write(':TRIGger:EDGE:SOURce CHANnel{}'.format(1))
 time.sleep(2)
 
-
+########################################################################################################################
+# Set the Testing and Table parameters
 serial_no_tb = np.zeros(2)
-# pulse_width_tb = np.zeros(2)
 Fun_gen_duty_cycle_tb = np.zeros(2)
-# pulse_repetition_tb = np.zeros(2)
+Fun_gen_duty_cycle_tb = [50,30]
 Fun_gen_freq_tb = np.zeros(2)
+Fun_gen_freq_tb = [1e6,10e6]
 pulse_duration_reading_tb = np.zeros(2)
 pulse_repetition_reading_tb = np.zeros(2)
 output_status_tb= []
 table_i = 0
 
-Fun_gen_freq_tb = [1e6,10e6]
-Fun_gen_duty_cycle_tb = [50,30]
+
+
 ideal_min_width = [425e-09,25.5e-09]
 ideal_max_width = [575e-09,34.5e-09]
 ideal_min_period = [0.95e-06,0.95e-07]
@@ -133,7 +146,9 @@ ideal_max_period = [1.05e-06,1.05e-07]
 timebase_scale = [500e-09,50e-09]
 timebase_position = [423.4E-9,423.4E-9]
 
+########################################################################################################################
 
+print('Test start for Pulse Modulation External Source')
 for test in range(2):
     scope.write('AUTOscale')
     # Pulse modulation setting with External source
@@ -181,7 +196,6 @@ for test in range(2):
 
 
 ########################################################################################################################
-
 
 # Sample data for the table
 data = list(zip(serial_no_tb,Fun_gen_duty_cycle_tb, Fun_gen_freq_tb,  pulse_duration_reading_tb, pulse_repetition_reading_tb, output_status_tb))
